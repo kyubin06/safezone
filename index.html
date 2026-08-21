@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<title>Safe-Point AI · 안심경로 체험 + AI 포즈미션 | 세종의 빛</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/mission.css">
+</head>
+<body>
+<div class="topbar">
+  <div class="wrap">
+    <div class="brand"><div class="logo">🛡️</div><div>Safe-Point AI<small>세종의 빛 · AI 안심경로 체험</small></div></div>
+    <div class="steps" id="steps">
+      <div class="st" data-s="setup"><span class="n">1</span>목적지·가중치</div><div class="sep"></div>
+      <div class="st" data-s="analyze"><span class="n">2</span>경로 분석</div><div class="sep"></div>
+      <div class="st" data-s="walk"><span class="n">3</span>안심경로 체험</div><div class="sep"></div>
+      <div class="st" data-s="result"><span class="n">4</span>결과</div>
+    </div>
+  </div>
+</div>
+
+<!-- INTRO -->
+<section id="screen-intro" class="screen">
+  <div class="blob" style="width:420px;height:420px;background:#8ee7bd;top:-80px;right:-60px"></div>
+  <div class="blob" style="width:360px;height:360px;background:#bfe9d4;bottom:-80px;left:-40px"></div>
+  <div class="hero">
+    <div class="eyebrow">🌙 야간 귀가 안전 · AI 기반 예방 플랫폼</div>
+    <h1>가장 안전한 길을<br><b>AI가 찾아 함께 걷습니다</b></h1>
+    <p class="tag"><b>킨텍스</b>에서 목적지까지, 실제 <b>CCTV·보안등·방범 비상벨</b> 데이터를 바탕으로<br>AI가 <b>Safe-Score</b>를 계산해 가장 안심되는 경로를 추천하고 함께 이동합니다.</p>
+    <div class="feat">
+      <div class="f"><div class="ic">🎚️</div><h4>안전요소 가중치 설정</h4><p>CCTV·보안등·비상벨 중요도를 직접 조절</p></div>
+      <div class="f"><div class="ic">🧭</div><h4>Safe-Score 경로 추천</h4><p>실제 지도 위 후보 경로를 비교</p></div>
+      <div class="f"><div class="ic">🚶</div><h4>안심경로 동행 체험</h4><p>캐릭터와 함께 걸으며 안전요소 확인</p></div>
+      <div class="f"><div class="ic">🤖</div><h4>AI 포즈 미션</h4><p>꽃받침·볼콕 포즈를 AI가 인식·판정</p></div>
+    </div>
+    <div class="name-field">
+      <label for="userName">이름을 입력해주세요</label>
+      <input id="userName" type="text" autocomplete="off" placeholder="이름을 입력하세요" maxlength="20" oninput="onNameInput()" onkeydown="if(event.key==='Enter')startExp()">
+    </div>
+    <button class="cta" id="startBtn" onclick="startExp()" disabled>체험 시작하기 <span>→</span></button>
+    <p class="note">※ 킨텍스(경기 고양시) 인근 실제 공공데이터 기반 · CCTV 381대 · 방범 비상벨 57개소 · 보안등 대화동 409·장항동 355개 등</p>
+  </div>
+</section>
+
+<!-- SETUP -->
+<section id="screen-setup" class="screen hidden"><div class="wrap page">
+  <div class="page-head"><h2 id="setupTitle">목적지와 안전요소 가중치를 설정하세요</h2>
+    <p>출발지는 <b style="color:var(--green-d)">킨텍스 제1전시장</b>으로 고정됩니다. 목적지를 직접 입력하고, 어떤 안전요소를 더 중요하게 볼지 정해주세요.</p></div>
+  <div class="grid-setup">
+    <div class="card">
+      <div class="ep start"><div class="dot"></div><div class="txt"><b>출발지 · 고정</b><h4>킨텍스 제1전시장</h4><p>경기도 고양시 일산서구 · KINTEX 제1전시장</p></div></div>
+      <h3>🎯 목적지 입력 <span class="pill">직접 입력</span></h3>
+      <p class="hint">가고 싶은 장소나 주소를 입력하세요.</p>
+      <div class="dest-wrap">
+        <div class="dest-input">
+          <input id="destInput" type="text" autocomplete="off" placeholder="목적지를 입력하세요"
+            oninput="onDestInput()" onkeydown="onDestKey(event)">
+          <button onclick="hideAC();doGeocode()">🔍 확인</button>
+        </div>
+        <div class="ac-list" id="acList"></div>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="geo-status" id="geoStatus"></div>
+      <div class="setup-map-wrap"><div id="setupMap"></div></div>
+      <div class="setup-map-hint" id="setupMapHint">목적지를 입력하면 지도에 위치가 표시됩니다.</div>
+    </div>
+
+    <div class="card">
+      <h3>🎚️ 안전요소 가중치</h3>
+      <p class="hint">각 안전요소를 얼마나 중요하게 볼지 설정하면, AI가 이 기준으로 경로의 Safe-Score를 계산합니다.</p>
+      <div class="wt"><div class="top"><div class="icn c">🎥</div><div class="lab">CCTV<small>실시간 영상 감시·AI 이상행동 감지</small></div><div class="val"><span id="wtc">33</span><span>%</span></div></div>
+        <input type="range" class="c" id="rc" min="0" max="10" value="5" oninput="onWeight()"></div>
+      <div class="wt"><div class="top"><div class="icn g">💡</div><div class="lab">보안등<small>야간 시야 확보·체감 안전 향상</small></div><div class="val"><span id="wtg">33</span><span>%</span></div></div>
+        <input type="range" class="g" id="rg" min="0" max="10" value="5" oninput="onWeight()"></div>
+      <div class="wt"><div class="top"><div class="icn b">🔔</div><div class="lab">방범 비상벨<small>위급 시 관제센터·경찰 즉시 연결</small></div><div class="val"><span id="wtb">34</span><span>%</span></div></div>
+        <input type="range" class="b" id="rb" min="0" max="10" value="5" oninput="onWeight()"></div>
+      <div style="font-size:12px;color:var(--dim);font-weight:700;margin:2px 0 6px">가중치 배분</div>
+      <div class="wshare" id="wshare"><i style="background:var(--cctv);width:33.3%"></i><i style="background:var(--guard);width:33.3%"></i><i style="background:var(--bell);width:33.3%"></i></div>
+      <div class="wsleg"><span style="color:var(--cctv)">CCTV</span><span style="color:var(--guard)">보안등</span><span style="color:var(--bell)">비상벨</span></div>
+      <button class="big-btn" id="calcBtn" style="margin-top:22px" disabled onclick="goAnalyze()">안전 경로 계산하기</button>
+      <p class="src-note">📊 <b>데이터 출처</b>· 경기 고양시 공공데이터 (CCTV 381대·방범 비상벨 57개소는 실제 위치, ○○년 기준). 보안등은 좌표 미제공 데이터로 실제 동별 총량(대화동 409·장항동 355개 등)을 경로 길이에 비례해 추정 표시합니다. Safe-Zone(안심매장)은 서비스 개념을 보여주기 위한 예시로, 실제 제휴 매장이 아닙니다. 지도: OpenStreetMap·CARTO / 장소검색: 카카오맵·Photon / 보행자 경로: OSRM(FOSSGIS).</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ANALYZE -->
+<section id="screen-analyze" class="screen hidden"><div class="wrap page">
+  <div class="page-head"><h2>후보 경로를 비교해 가장 안전한 길을 찾았습니다</h2>
+    <p id="analyzeSub">AI가 실제 보행자 경로 주변의 안전요소 밀도와 설정한 가중치를 종합해 Safe-Score를 산출했습니다.</p></div>
+  <div class="grid-analyze">
+    <div class="mapwrap" id="mapSlotAnalyze">
+      <div class="map-legend">
+        <div class="lg"><span class="dot" style="background:var(--cctv)"></span>CCTV</div>
+        <div class="lg"><span class="dot" style="background:var(--guard)"></span>보안등</div>
+        <div class="lg"><span class="dot" style="background:var(--bell)"></span>방범 비상벨</div>
+        <div class="lg"><span class="dot" style="background:var(--zone)"></span>Safe-Zone</div>
+      </div>
+      <div class="map-badge" id="mapBadge1">킨텍스 → 목적지</div>
+    </div>
+    <div>
+      <div id="routeList"></div>
+      <div id="analyzeActions" class="hidden">
+        <button class="go-btn" onclick="startWalk()">추천 안심경로로 체험 출발</button>
+        <button class="ghost-btn" onclick="backToSetup()">← 목적지·가중치 다시 설정</button>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- WALK -->
+<section id="screen-walk" class="screen hidden"><div class="wrap page">
+  <div class="page-head"><h2 id="walkTitle">안심경로를 따라 이동 중…</h2>
+    <p>추천 경로를 따라 걷습니다. 주변 안전요소를 통과할 때마다 안내가 뜨고, 🎯 <b>미션 지점</b>에서는 AI 포즈 미션 팝업이 열립니다.</p></div>
+  <div class="grid-walk">
+    <div class="mapwrap" id="mapSlotWalk">
+      <div class="map-legend">
+        <div class="lg"><span class="dot" style="background:var(--cctv)"></span>CCTV</div>
+        <div class="lg"><span class="dot" style="background:var(--guard)"></span>보안등</div>
+        <div class="lg"><span class="dot" style="background:var(--bell)"></span>방범 비상벨</div>
+        <div class="lg"><span class="dot" style="background:var(--zone)"></span>Safe-Zone</div>
+      </div>
+      <div class="walk-ctl">
+        <button id="btnPause" onclick="togglePause()">⏸ 일시정지</button>
+        <button onclick="setSpeed()">⏩ <span id="spdLabel">1.0×</span></button>
+      </div>
+      <div class="toast-layer" id="toastLayer"></div>
+      <div class="progressbar"><i id="progFill"></i></div>
+    </div>
+    <div class="hud">
+      <div class="gauge-card"><h3>SAFE 게이지</h3>
+        <div class="gauge-ring">
+          <svg width="180" height="180" viewBox="0 0 180 180">
+            <circle cx="90" cy="90" r="78" fill="none" stroke="#e6efe9" stroke-width="13"/>
+            <circle id="gaugeArc" cx="90" cy="90" r="78" fill="none" stroke="url(#gg)" stroke-width="13" stroke-linecap="round" stroke-dasharray="490" stroke-dashoffset="490"/>
+            <defs><linearGradient id="gg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#34cf83"/><stop offset="1" stop-color="#1ba866"/></linearGradient></defs>
+          </svg>
+          <div class="center"><div><b id="gaugeVal">0</b><span>SAFE SCORE</span></div></div>
+        </div>
+      </div>
+      <div class="statline">
+        <div class="stat"><div class="k">🎯 Safe-Point</div><div class="v"><span id="pointVal">0</span><small> P</small></div></div>
+        <div class="stat"><div class="k">📏 이동거리</div><div class="v"><span id="distVal">0</span><small> m</small></div></div>
+      </div>
+      <div class="pass-card"><h3>통과한 안전요소</h3>
+        <div class="pass-row"><div class="ic" style="background:rgba(47,111,237,.12)">🎥</div><div class="nm">CCTV</div><div class="ct" style="color:var(--cctv)"><span id="pc">0</span></div></div>
+        <div class="pass-row"><div class="ic" style="background:rgba(240,152,15,.14)">💡</div><div class="nm">보안등</div><div class="ct" style="color:var(--guard)"><span id="pg">0</span></div></div>
+        <div class="pass-row"><div class="ic" style="background:rgba(239,70,87,.12)">🔔</div><div class="nm">방범 비상벨</div><div class="ct" style="color:var(--bell)"><span id="pb">0</span></div></div>
+        <div class="pass-row"><div class="ic" style="background:rgba(249,115,22,.12)">🏪</div><div class="nm">Safe-Zone</div><div class="ct" style="color:var(--zone)"><span id="pz">0</span></div></div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- RESULT -->
+<section id="screen-result" class="screen hidden"><div class="wrap">
+  <div class="result-card"><div class="res-hero">
+    <div class="confetti" id="confetti"></div>
+    <div class="rank" id="resRank">안심 등급</div>
+    <div class="res-ring">
+      <svg width="200" height="200" viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="86" fill="none" stroke="#e6efe9" stroke-width="15"/>
+        <circle id="resArc" cx="100" cy="100" r="86" fill="none" stroke="url(#gg2)" stroke-width="15" stroke-linecap="round" stroke-dasharray="540" stroke-dashoffset="540"/>
+        <defs><linearGradient id="gg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#34cf83"/><stop offset="1" stop-color="#1ba866"/></linearGradient></defs>
+      </svg>
+      <div class="c"><div><b id="resScore">0</b><span>SAFE SCORE</span></div></div>
+    </div>
+    <div class="res-sub" id="resSub">킨텍스 → 목적지 안심경로 체험 완료</div>
+    <div class="res-stats">
+      <div class="res-stat"><div class="v"><span id="resDist">0</span><small> m</small></div><div class="k">총 이동거리</div></div>
+      <div class="res-stat"><div class="v"><span id="resPoint">0</span><small> P</small></div><div class="k">획득 Safe-Point</div></div>
+      <div class="res-stat"><div class="v"><span id="resPass">0</span><small> 개</small></div><div class="k">통과 안전요소</div></div>
+    </div>
+    <div class="res-break" id="resBreak"></div>
+    <div class="res-actions">
+      <button class="btn-primary" onclick="resetToSetup()">🔁 다른 목적지로 체험</button>
+      <button class="btn-ghost" onclick="resetToIntro()">처음으로</button>
+    </div>
+    <p class="res-note" id="resNote"></p>
+  </div>
+  <div class="foot">Safe-Point AI · <b>세종의 빛</b> · AI 기반 예방 및 초기 대응 플랫폼<br>CCTV·방범 비상벨: 경기 고양시 실제 위치 공개데이터 · 보안등: 좌표 미제공 데이터로 실제 동별 총량을 반영해 경로 길이 기준 산정 · Safe-Zone은 서비스 개념 시연용 · 지도 © OpenStreetMap·CARTO, 보행자 경로 © OSRM/FOSSGIS</div>
+  </div>
+</div></section>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- 포즈 미션: MediaPipe Pose Landmarker(tasks-vision) + 학습 MLP — mission.js 내부에서 CDN 로드 -->
+<script src="js/config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script src="js/mission.js"></script>
+</body>
+</html>
