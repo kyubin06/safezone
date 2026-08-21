@@ -69,3 +69,6 @@ const MISSIONS = [
     gauge: 8
   }
 ];
+// ── 매번 랜덤으로 2개만 사용 ──
+MISSIONS.sort(() => Math.random() - 0.5);   // 순서 섞기
+MISSIONS.length = 2;                          // 앞의 2개만 남기기
