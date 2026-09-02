@@ -122,7 +122,7 @@
           <div class="mz-info">
             <h3>${curMission.lead}</h3>
             <div class="mz-howto">${curMission.steps.map((s,i)=>`<div class="mz-row"><span class="mz-num">${i+1}</span><span>${s}</span></div>`).join('')}</div>
-            <span class="mz-reward">미션 성공 시 +${MISSION_PT} Safe-Point (가장 큰 점수!)</span>
+            <span class="mz-reward">미션 성공 시 +${MISSION_PT} Safe-Point</span>
           </div>
         </div>
         <div class="mz-btns">
