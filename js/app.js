@@ -347,57 +347,113 @@ async function fetchRoutes(){
   const s={lat:DATA.start.lat,lng:DATA.start.lng};
   const d=state.dest;
 
-  // =========================================================
-  // 1. 기본 최단 경로 가져오기
-  // =========================================================
+  // =========================
+  // 1. 기본 경로 가져오기
+  // =========================
   let routes=[];
 
   try{
     const res=await fetch(osrmUrl([s,d]));
+
+    if(!res.ok){
+      throw new Error('OSRM 기본 경로 요청 실패: '+res.status);
+    }
+
     const js=await res.json();
 
     if(js.code==='Ok' && js.routes){
-      js.routes.forEach(rt=>{
+      js.routes.slice(0,3).forEach(rt=>{
         const poly=decodeGeo(rt);
 
-        // 유턴 없는 경로만 후보에 추가
         if(!hasUTurn(poly)){
           routes.push({
-            poly,
+            poly:poly,
             len:rt.distance
           });
         }
       });
     }
   }catch(e){
-    console.warn('기본 경로 가져오기 실패',e);
+    console.error('기본 경로 가져오기 실패:',e);
+    throw e;
   }
 
-  // 기본 경로조차 없으면 종료
+  // 기본 경로가 아예 없으면 종료
   if(!routes.length){
-    throw new Error('no route');
+    throw new Error('기본 경로가 없습니다.');
   }
 
-  // 가장 짧은 경로를 기준으로 지나치게 긴 경로를 제거
   const baseLen=routes[0].len;
 
-  // =========================================================
-  // 2. 경로 중간 여러 지점에 "경유점"을 만들어
-  //    서로 다른 방향의 후보 경로 생성
-  // =========================================================
-
+  // =========================
+  // 2. 출발점 → 도착점 방향 계산
+  // =========================
   const dx=d.lng-s.lng;
   const dy=d.lat-s.lat;
-  const directLen=Math.hypot(dx,dy)||1;
+  const ln=Math.hypot(dx,dy)||1;
 
-  // 경로를 얼마나 옆으로 우회할지
-  // 목적지가 멀수록 조금 크게
-  const offsetBase=Math.max(
-    0.0035,
-    Math.min(0.012,baseLen/111000*0.35)
+  // 경로에서 옆으로 얼마나 우회할지
+  const off=Math.max(
+    0.0025,
+    Math.min(0.005, (baseLen/111000)*0.20)
   );
 
-  // 중간 지점 8곳 × 좌/우 = 최대 16개 후보
+  // =========================
+  // 3. 중간 지점을 만들어 우회 경로 요청
+  // =========================
+  async function makeCandidate(frac,sign){
+
+    const byLat=s.lat+dy*frac;
+    const bx=s.lng+dx*frac;
+
+    const via={
+      lat:byLat+(-dx/ln)*off*sign,
+      lng:bx+(dy/ln)*off*sign
+    };
+
+    try{
+      const res=await fetch(osrmUrl([s,via,d]));
+
+      if(!res.ok){
+        console.warn('후보 경로 요청 실패:',res.status);
+        return null;
+      }
+
+      const j=await res.json();
+
+      if(j.code!=='Ok' || !j.routes || !j.routes[0]){
+        return null;
+      }
+
+      const rt=j.routes[0];
+      const poly=decodeGeo(rt);
+      const len=rt.distance;
+
+      // 너무 돌아가는 길 제외
+      if(len>baseLen*1.8){
+        return null;
+      }
+
+      // 유턴 경로 제외
+      if(hasUTurn(poly)){
+        return null;
+      }
+
+      return {
+        poly:poly,
+        len:len
+      };
+
+    }catch(e){
+      console.warn('후보 경로 오류:',e);
+      return null;
+    }
+  }
+
+  // =========================
+  // 4. 후보 생성
+  // =========================
+  // 중간 지점 8개 × 좌/우 = 최대 16개
   const fracs=[
     0.10,
     0.20,
@@ -409,103 +465,51 @@ async function fetchRoutes(){
     0.80
   ];
 
-  // 서로 다른 거리의 우회 폭
-  const offsets=[
-    0.75,
-    1.0,
-    1.25
-  ];
-
-  async function makeViaRoute(frac,side,mult){
-
-    // 직선상 중간 지점
-    const centerLat=s.lat+dy*frac;
-    const centerLng=s.lng+dx*frac;
-
-    // 직선에 수직인 방향
-    const perpLat=-dx/directLen;
-    const perpLng= dy/directLen;
-
-    const offset=offsetBase*mult;
-
-    const via={
-      lat:centerLat+perpLat*offset*side,
-      lng:centerLng+perpLng*offset*side
-    };
-
-    try{
-      const res=await fetch(osrmUrl([s,via,d]));
-      const js=await res.json();
-
-      if(js.code!=='Ok'||!js.routes||!js.routes.length){
-        return null;
-      }
-
-      const rt=js.routes[0];
-      const poly=decodeGeo(rt);
-      const len=rt.distance;
-
-      // -----------------------------------------------------
-      // 불필요하게 너무 긴 경로 제거
-      // -----------------------------------------------------
-      if(len>baseLen*1.8){
-        return null;
-      }
-
-      // -----------------------------------------------------
-      // 유턴 경로 제거
-      // -----------------------------------------------------
-      if(hasUTurn(poly)){
-        return null;
-      }
-
-      return {
-        poly,
-        len
-      };
-
-    }catch(e){
-      return null;
-    }
-  }
-
-  // =========================================================
-  // 3. 다양한 후보 경로 요청
-  // =========================================================
-
   const jobs=[];
 
-  fracs.forEach(frac=>{
-    // 각 위치에서 좌/우 방향
-    offsets.forEach(mult=>{
-      jobs.push(makeViaRoute(frac,1,mult));
-      jobs.push(makeViaRoute(frac,-1,mult));
-    });
+  fracs.forEach(f=>{
+    jobs.push({frac:f,sign:1});
+    jobs.push({frac:f,sign:-1});
   });
 
-  const generated=(await Promise.all(jobs)).filter(Boolean);
+  // =========================
+  // 5. 너무 많은 요청을 동시에 보내지 않음
+  //    → 3개씩 나눠서 요청
+  // =========================
+  const extra=[];
 
-  routes=routes.concat(generated);
+  for(let i=0;i<jobs.length;i+=3){
 
-  console.log('생성된 전체 후보:',routes.length);
+    const batch=jobs.slice(i,i+3);
 
-  // =========================================================
-  // 4. 경로 중복 제거
-  //
-  // 길이만 비교하지 않고 실제 경로의 모양을 비교한다.
-  // =========================================================
+    const result=await Promise.all(
+      batch.map(x=>makeCandidate(x.frac,x.sign))
+    );
 
+    result.forEach(r=>{
+      if(r)extra.push(r);
+    });
+
+    // 공개 OSRM 서버에 너무 빠르게 요청하지 않도록 잠깐 대기
+    await new Promise(resolve=>setTimeout(resolve,250));
+  }
+
+  routes=routes.concat(extra);
+
+  // =========================
+  // 6. 중복 경로 제거
+  // =========================
   function pathsSimilar(a,b){
 
     // 길이가 너무 다르면 다른 경로
-    const lengthDiff=Math.abs(a.len-b.len);
-
-    if(lengthDiff>Math.max(80,a.len*0.04)){
+    if(
+      Math.abs(a.len-b.len)>
+      Math.max(60,a.len*0.03)
+    ){
       return false;
     }
 
-    // 경로를 10개 지점에서 비교
-    const N=10;
+    const N=8;
     let maxDiff=0;
     let totalDiff=0;
 
@@ -513,8 +517,15 @@ async function fetchRoutes(){
 
       const t=i/N;
 
-      const pa=posAtS(a.poly,a.len*t);
-      const pb=posAtS(b.poly,b.len*t);
+      const pa=posAtS(
+        a.poly,
+        a.len*t
+      );
+
+      const pb=posAtS(
+        b.poly,
+        b.len*t
+      );
 
       const diff=segDist(pa,pb);
 
@@ -524,68 +535,34 @@ async function fetchRoutes(){
 
     const avgDiff=totalDiff/(N+1);
 
-    // 최대 편차도 작고 평균 편차도 작으면
-    // 사실상 같은 길이라고 판단
-    if(maxDiff<55 && avgDiff<30){
-      return true;
-    }
-
-    return false;
+    // 거의 같은 길이면 하나만 남김
+    return maxDiff<45 && avgDiff<25;
   }
 
-  // =========================================================
-  // 5. 중복 제거
-  // =========================================================
+  const uniq=[];
 
-  const unique=[];
-
-  routes.forEach(route=>{
-
-    const duplicated=unique.some(existing=>{
-      return pathsSimilar(existing,route);
-    });
-
-    if(!duplicated){
-      unique.push(route);
+  routes.forEach(r=>{
+    if(!uniq.some(u=>pathsSimilar(u,r))){
+      uniq.push(r);
     }
-
   });
 
-  // =========================================================
-  // 6. 최종적으로 최대 15개 후보만 사용
-  //
-  // 단순히 앞에서 15개를 자르지 않고
-  // 거리순으로 정렬한 뒤 적당한 범위의 후보를 사용
-  // =========================================================
-
-  unique.sort((a,b)=>a.len-b.len);
-
-  const candidateRoutes=unique.slice(0,15);
-
   console.log(
-    '유턴/중복 제거 후 후보:',
-    unique.length,
+    '생성된 전체 후보:',
+    routes.length,
     '개'
   );
 
   console.log(
-    '최종 점수 계산 후보:',
-    candidateRoutes.length,
+    '중복 제거 후 후보:',
+    uniq.length,
     '개'
   );
 
-  // =========================================================
-  // 7. 후보가 너무 적으면 현재 확보된 후보를 그대로 사용
-  // =========================================================
-
-  if(candidateRoutes.length<3){
-    console.warn(
-      '서로 다른 경로가 충분히 생성되지 않았습니다:',
-      candidateRoutes.length
-    );
-  }
-
-  return candidateRoutes;
+  // =========================
+  // 7. 최종 후보 반환
+  // =========================
+  return uniq;
 }
   // 경로를 따라 여러 지점 × 좌/우 양쪽으로 우회를 시도해서 후보를 최대한 다양하게 만든다.
   // (딱 2~3개만 만들고 순서만 바꾸면 "같은 길이 순서만 바뀐다"는 느낌을 주기 때문에,
