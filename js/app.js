@@ -344,27 +344,249 @@ function hasUTurn(poly){
   return false;
 }
 async function fetchRoutes(){
-  const s={lat:DATA.start.lat,lng:DATA.start.lng},d=state.dest;
-  let res=await fetch(osrmUrl([s,d]));let js=await res.json();
+  const s={lat:DATA.start.lat,lng:DATA.start.lng};
+  const d=state.dest;
+
+  // =========================================================
+  // 1. 기본 최단 경로 가져오기
+  // =========================================================
   let routes=[];
-  if(js.code==='Ok'){js.routes.slice(0,3).forEach(rt=>{const poly=decodeGeo(rt);if(!hasUTurn(poly))routes.push({poly,len:rt.distance});});}
-  const baseLen=routes.length?routes[0].len:segDist(s,d)*1.3;
-  const dx=d.lng-s.lng,dy=d.lat-s.lat,ln=Math.hypot(dx,dy)||1;
-  const off=Math.max(0.005,(baseLen/111000)*0.26);
-  async function viaRoute(frac,sign){
-    const byLat=s.lat+dy*frac,bx=s.lng+dx*frac;
-    const via={lat:byLat+(-dx/ln)*off*sign,lng:bx+(dy/ln)*off*sign};
-    try{
-      const r=await fetch(osrmUrl([s,via,d]));const j=await r.json();
-      if(j.code==='Ok'&&j.routes[0]){
-        const poly=decodeGeo(j.routes[0]),len=j.routes[0].distance;
-        if(len>baseLen*2.3)return null; // 지나치게(2.3배 이상) 길어지는 불필요한 경로는 제외
-        if(hasUTurn(poly))return null;  // 유턴하는 경로는 제외
-        return {poly,len};
-      }
-    }catch(e){}
-    return null;
+
+  try{
+    const res=await fetch(osrmUrl([s,d]));
+    const js=await res.json();
+
+    if(js.code==='Ok' && js.routes){
+      js.routes.forEach(rt=>{
+        const poly=decodeGeo(rt);
+
+        // 유턴 없는 경로만 후보에 추가
+        if(!hasUTurn(poly)){
+          routes.push({
+            poly,
+            len:rt.distance
+          });
+        }
+      });
+    }
+  }catch(e){
+    console.warn('기본 경로 가져오기 실패',e);
   }
+
+  // 기본 경로조차 없으면 종료
+  if(!routes.length){
+    throw new Error('no route');
+  }
+
+  // 가장 짧은 경로를 기준으로 지나치게 긴 경로를 제거
+  const baseLen=routes[0].len;
+
+  // =========================================================
+  // 2. 경로 중간 여러 지점에 "경유점"을 만들어
+  //    서로 다른 방향의 후보 경로 생성
+  // =========================================================
+
+  const dx=d.lng-s.lng;
+  const dy=d.lat-s.lat;
+  const directLen=Math.hypot(dx,dy)||1;
+
+  // 경로를 얼마나 옆으로 우회할지
+  // 목적지가 멀수록 조금 크게
+  const offsetBase=Math.max(
+    0.0035,
+    Math.min(0.012,baseLen/111000*0.35)
+  );
+
+  // 중간 지점 8곳 × 좌/우 = 최대 16개 후보
+  const fracs=[
+    0.10,
+    0.20,
+    0.30,
+    0.40,
+    0.50,
+    0.60,
+    0.70,
+    0.80
+  ];
+
+  // 서로 다른 거리의 우회 폭
+  const offsets=[
+    0.75,
+    1.0,
+    1.25
+  ];
+
+  async function makeViaRoute(frac,side,mult){
+
+    // 직선상 중간 지점
+    const centerLat=s.lat+dy*frac;
+    const centerLng=s.lng+dx*frac;
+
+    // 직선에 수직인 방향
+    const perpLat=-dx/directLen;
+    const perpLng= dy/directLen;
+
+    const offset=offsetBase*mult;
+
+    const via={
+      lat:centerLat+perpLat*offset*side,
+      lng:centerLng+perpLng*offset*side
+    };
+
+    try{
+      const res=await fetch(osrmUrl([s,via,d]));
+      const js=await res.json();
+
+      if(js.code!=='Ok'||!js.routes||!js.routes.length){
+        return null;
+      }
+
+      const rt=js.routes[0];
+      const poly=decodeGeo(rt);
+      const len=rt.distance;
+
+      // -----------------------------------------------------
+      // 불필요하게 너무 긴 경로 제거
+      // -----------------------------------------------------
+      if(len>baseLen*1.8){
+        return null;
+      }
+
+      // -----------------------------------------------------
+      // 유턴 경로 제거
+      // -----------------------------------------------------
+      if(hasUTurn(poly)){
+        return null;
+      }
+
+      return {
+        poly,
+        len
+      };
+
+    }catch(e){
+      return null;
+    }
+  }
+
+  // =========================================================
+  // 3. 다양한 후보 경로 요청
+  // =========================================================
+
+  const jobs=[];
+
+  fracs.forEach(frac=>{
+    // 각 위치에서 좌/우 방향
+    offsets.forEach(mult=>{
+      jobs.push(makeViaRoute(frac,1,mult));
+      jobs.push(makeViaRoute(frac,-1,mult));
+    });
+  });
+
+  const generated=(await Promise.all(jobs)).filter(Boolean);
+
+  routes=routes.concat(generated);
+
+  console.log('생성된 전체 후보:',routes.length);
+
+  // =========================================================
+  // 4. 경로 중복 제거
+  //
+  // 길이만 비교하지 않고 실제 경로의 모양을 비교한다.
+  // =========================================================
+
+  function pathsSimilar(a,b){
+
+    // 길이가 너무 다르면 다른 경로
+    const lengthDiff=Math.abs(a.len-b.len);
+
+    if(lengthDiff>Math.max(80,a.len*0.04)){
+      return false;
+    }
+
+    // 경로를 10개 지점에서 비교
+    const N=10;
+    let maxDiff=0;
+    let totalDiff=0;
+
+    for(let i=0;i<=N;i++){
+
+      const t=i/N;
+
+      const pa=posAtS(a.poly,a.len*t);
+      const pb=posAtS(b.poly,b.len*t);
+
+      const diff=segDist(pa,pb);
+
+      maxDiff=Math.max(maxDiff,diff);
+      totalDiff+=diff;
+    }
+
+    const avgDiff=totalDiff/(N+1);
+
+    // 최대 편차도 작고 평균 편차도 작으면
+    // 사실상 같은 길이라고 판단
+    if(maxDiff<55 && avgDiff<30){
+      return true;
+    }
+
+    return false;
+  }
+
+  // =========================================================
+  // 5. 중복 제거
+  // =========================================================
+
+  const unique=[];
+
+  routes.forEach(route=>{
+
+    const duplicated=unique.some(existing=>{
+      return pathsSimilar(existing,route);
+    });
+
+    if(!duplicated){
+      unique.push(route);
+    }
+
+  });
+
+  // =========================================================
+  // 6. 최종적으로 최대 15개 후보만 사용
+  //
+  // 단순히 앞에서 15개를 자르지 않고
+  // 거리순으로 정렬한 뒤 적당한 범위의 후보를 사용
+  // =========================================================
+
+  unique.sort((a,b)=>a.len-b.len);
+
+  const candidateRoutes=unique.slice(0,15);
+
+  console.log(
+    '유턴/중복 제거 후 후보:',
+    unique.length,
+    '개'
+  );
+
+  console.log(
+    '최종 점수 계산 후보:',
+    candidateRoutes.length,
+    '개'
+  );
+
+  // =========================================================
+  // 7. 후보가 너무 적으면 현재 확보된 후보를 그대로 사용
+  // =========================================================
+
+  if(candidateRoutes.length<3){
+    console.warn(
+      '서로 다른 경로가 충분히 생성되지 않았습니다:',
+      candidateRoutes.length
+    );
+  }
+
+  return candidateRoutes;
+}
   // 경로를 따라 여러 지점 × 좌/우 양쪽으로 우회를 시도해서 후보를 최대한 다양하게 만든다.
   // (딱 2~3개만 만들고 순서만 바꾸면 "같은 길이 순서만 바뀐다"는 느낌을 주기 때문에,
   //  일단 유턴 없는 후보를 최대한 많이 모아두고 최종 추천은 goAnalyze에서 점수로 추린다)
