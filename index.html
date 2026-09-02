@@ -40,7 +40,7 @@
       <input id="userName" type="text" autocomplete="off" placeholder="이름을 입력하세요" maxlength="20" oninput="onNameInput()" onkeydown="if(event.key==='Enter')startExp()">
     </div>
     <button class="cta" id="startBtn" onclick="startExp()" disabled>체험 시작하기 <span>→</span></button>
-    <p class="note">※ 킨텍스(경기 고양시) 인근 실제 공공데이터 기반 · CCTV 381대 · 방범 비상벨 57개소 · 보안등 10,667개(실제 위치)</p>
+    <p class="note">※ 킨텍스(경기 고양시) 인근 실제 공공데이터 기반 · CCTV 381대 · 방범 비상벨 57개소 · 보안등 10,667개</p>
   </div>
 </section>
 
@@ -80,7 +80,7 @@
       <div class="wshare" id="wshare"><i style="background:var(--cctv);width:33.3%"></i><i style="background:var(--guard);width:33.3%"></i><i style="background:var(--bell);width:33.3%"></i></div>
       <div class="wsleg"><span style="color:var(--cctv)">CCTV</span><span style="color:var(--guard)">보안등</span><span style="color:var(--bell)">비상벨</span></div>
       <button class="big-btn" id="calcBtn" style="margin-top:22px" disabled onclick="goAnalyze()">안전 경로 계산하기</button>
-      <p class="src-note">📊 <b>데이터 출처</b>· 경기 고양시 공공데이터 (CCTV 381대·방범 비상벨 57개소·보안등 10,667개 모두 실제 위치). 보안등은 경로가 실제로 지나는 지점만 집계합니다. Safe-Zone(안심매장)은 서비스 개념을 보여주기 위한 예시로, 실제 제휴 매장이 아닙니다. 지도: OpenStreetMap·CARTO / 장소검색: 카카오맵·Photon / 보행자 경로: OSRM(FOSSGIS).</p>
+      <p class="src-note">📊 <b>데이터 출처</b>· 경기 고양시 공공데이터 (CCTV 381대·방범 비상벨 57개소·보안등 10,667개). Safe-Zone(안심매장)은 서비스 개념을 보여주기 위한 예시로, 실제 제휴 매장이 아닙니다. 지도: OpenStreetMap·CARTO / 장소검색: 카카오맵·Photon / 보행자 경로: OSRM(FOSSGIS).</p>
     </div>
   </div>
 </div></section>
@@ -179,7 +179,7 @@
     </div>
     <p class="res-note" id="resNote"></p>
   </div>
-  <div class="foot">Safe-Point AI · <b>세종의 빛</b> · AI 기반 예방 및 초기 대응 플랫폼<br>CCTV·방범 비상벨·보안등: 경기 고양시 실제 위치 공개데이터(보안등 10,667개) · 경로가 실제로 지나는 지점만 집계 · Safe-Zone은 서비스 개념 시연용 · 지도 © OpenStreetMap·CARTO, 보행자 경로 © OSRM/FOSSGIS</div>
+  <div class="foot">Safe-Point AI · <b>세종의 빛</b> · AI 기반 예방 및 초기 대응 플랫폼<br>CCTV·방범 비상벨·보안등: 경기 고양시 실제 위치 공개데이터 · Safe-Zone은 서비스 개념 시연용 · 지도 © OpenStreetMap·CARTO, 보행자 경로 © OSRM/FOSSGIS</div>
   </div>
 </div></section>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
