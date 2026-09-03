@@ -1,0 +1,121 @@
+/* =====================================================================
+   🎯 안심 미션 팝업 (mission.js)  —  전시웹사이트02 디자인 토큰 재사용
+   ===================================================================== */
+.mz-flag{font-size:24px;filter:drop-shadow(0 3px 5px rgba(0,0,0,.35));animation:mzBob 1.4s ease-in-out infinite}
+@keyframes mzBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+
+.mz-dim{position:fixed;inset:0;z-index:3000;background:rgba(20,50,35,.42);backdrop-filter:blur(3px);
+  display:grid;place-items:center;padding:24px;animation:mzFade .28s ease}
+@keyframes mzFade{from{opacity:0}to{opacity:1}}
+.mz-modal{width:660px;max-width:96vw;background:var(--card);border-radius:26px;overflow:hidden;position:relative;
+  box-shadow:0 30px 80px rgba(15,45,30,.4);animation:mzPop .34s cubic-bezier(.2,1.1,.3,1)}
+.mz-modal.mz-wide{width:760px}
+.mz-modal.mz-narrow{width:560px}
+@keyframes mzPop{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+
+.mz-head{position:relative;padding:22px 26px;background:linear-gradient(135deg,#eafaf1,#dff5e9);border-bottom:1px solid var(--line)}
+.mz-badge{display:inline-flex;align-items:center;gap:7px;background:var(--grad);color:#fff;font-weight:800;font-size:14.5px;
+  padding:6px 14px;border-radius:20px;box-shadow:0 6px 16px rgba(34,176,107,.35)}
+.mz-step{position:absolute;top:22px;right:26px;font-size:14.5px;font-weight:800;color:var(--green-d);
+  background:#fff;border:1px solid var(--line2);border-radius:20px;padding:6px 13px}
+.mz-head h2{font-size:26px;font-weight:900;letter-spacing:-.5px;margin-top:13px}
+.mz-head p{font-size:16px;color:var(--sub);margin-top:6px;line-height:1.5}
+.mz-body{padding:24px 26px}
+
+/* pose guide */
+.mz-guide{display:grid;grid-template-columns:210px 1fr;gap:22px;align-items:center}
+.mz-pose-card{background:linear-gradient(160deg,#f2fbf6,#e6f6ee);border:1.5px solid var(--line2);border-radius:20px;
+  padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.mz-cap{font-size:14px;font-weight:800;color:var(--green-d);background:#fff;border:1px solid var(--line2);border-radius:20px;padding:4px 12px}
+.mz-mascot{filter:drop-shadow(0 6px 12px rgba(0,0,0,.12))}
+.mz-posename{font-size:15px;font-weight:800;color:var(--txt)}
+.mz-info h3{font-size:21px;font-weight:900}
+.mz-howto{margin-top:14px;display:flex;flex-direction:column;gap:9px}
+.mz-row{display:flex;align-items:flex-start;gap:10px;font-size:15.5px;color:var(--txt);font-weight:600}
+.mz-num{flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:var(--green-l);color:var(--green-d);font-size:14px;font-weight:800;display:grid;place-items:center;margin-top:1px}
+.mz-reward{margin-top:16px;display:inline-flex;align-items:center;gap:9px;font-size:15px;font-weight:800;color:var(--zone);
+  background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.25);border-radius:14px;padding:9px 15px}
+
+.mz-btns{display:flex;gap:12px;margin-top:22px}
+.mz-primary{flex:1;padding:16px;border-radius:15px;font-size:18px;font-weight:800;color:#fff;background:var(--grad);
+  box-shadow:0 12px 26px rgba(34,176,107,.36);display:flex;align-items:center;justify-content:center;gap:9px;transition:transform .18s}
+.mz-primary:hover{transform:translateY(-2px)}
+.mz-ghost{padding:16px 22px;border-radius:15px;font-size:17px;font-weight:800;background:var(--card2);color:var(--sub);border:1px solid var(--line)}
+.mz-ghost:hover{background:var(--green-l);color:var(--green-d)}
+
+/* model status badge */
+.mz-model{margin-top:16px;font-size:14px;font-weight:700;text-align:center;border-radius:12px;padding:9px 12px}
+.mz-model.ok{color:var(--green-d);background:var(--green-l);border:1px solid var(--line2)}
+.mz-model.load{color:var(--sub);background:var(--card2);border:1px solid var(--line)}
+.mz-model.demo{color:#b9740a;background:rgba(240,152,15,.12);border:1px solid rgba(240,152,15,.3)}
+
+/* camera */
+.mz-cam{position:relative;height:392px;border-radius:20px;overflow:hidden;background:radial-gradient(120% 120% at 50% 30%,#20303a,#0d181e)}
+.mz-cam video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.mz-corners i{position:absolute;width:34px;height:34px;border:3px solid rgba(52,207,131,.85)}
+.mz-corners i:nth-child(1){top:16px;left:16px;border-right:none;border-bottom:none;border-radius:8px 0 0 0}
+.mz-corners i:nth-child(2){top:16px;right:16px;border-left:none;border-bottom:none;border-radius:0 8px 0 0}
+.mz-corners i:nth-child(3){bottom:16px;left:16px;border-right:none;border-top:none;border-radius:0 0 0 8px}
+.mz-corners i:nth-child(4){bottom:16px;right:16px;border-left:none;border-top:none;border-radius:0 0 8px 0}
+.mz-rec{position:absolute;top:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:7px;
+  background:rgba(0,0,0,.45);color:#fff;font-size:14px;font-weight:700;padding:6px 12px;border-radius:20px;z-index:2}
+.mz-rec .mz-dot{width:8px;height:8px;border-radius:50%;background:#ff5a5a;box-shadow:0 0 8px #ff5a5a;animation:mzBlink 1s steps(2) infinite}
+@keyframes mzBlink{50%{opacity:.3}}
+.mz-guideghost{position:absolute;right:14px;bottom:10px;opacity:.32;pointer-events:none;filter:drop-shadow(0 0 4px rgba(0,0,0,.4))}
+.mz-cam-actions{display:flex;gap:12px;margin-top:16px}
+.mz-cam-actions .mz-primary{flex:1}
+.mz-cammsg{margin-top:14px}
+.mz-err{background:rgba(239,70,87,.08);border:1px solid rgba(239,70,87,.3);border-radius:14px;padding:14px 16px;
+  font-size:15px;color:var(--bell);font-weight:700;line-height:1.55}
+.mz-err small{color:var(--sub);font-weight:600}
+
+/* analyze */
+.mz-analyze{display:grid;grid-template-columns:1fr 260px;gap:20px}
+.mz-shotbox{position:relative;height:340px;border-radius:20px;overflow:hidden;background:#0d181e}
+.mz-shotbox img{width:100%;height:100%;object-fit:cover}
+.mz-noimg{width:100%;height:100%;display:grid;place-items:center;color:#6f8f80;font-weight:700}
+.mz-scan{position:absolute;left:0;right:0;height:3px;top:0;background:linear-gradient(90deg,transparent,#34cf83,transparent);
+  box-shadow:0 0 16px 3px rgba(52,207,131,.6);animation:mzScan 1.5s ease-in-out infinite}
+@keyframes mzScan{0%{top:6%}50%{top:92%}100%{top:6%}}
+.mz-analabel{position:absolute;left:0;right:0;bottom:14px;text-align:center;color:#dff7ea;font-size:15.5px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;gap:9px}
+.mz-spin{width:16px;height:16px;border-radius:50%;border:3px solid rgba(52,207,131,.3);border-top-color:#34cf83;animation:spin .8s linear infinite}
+.mz-side h3{font-size:15px;font-weight:800;color:var(--sub);margin-bottom:12px}
+.mz-cand{margin-bottom:13px}
+.mz-cand-top{display:flex;align-items:center;gap:7px;font-size:16px;font-weight:800;margin-bottom:6px}
+.mz-cand-top .mz-pct{margin-left:auto;font-weight:900;color:var(--dim)}
+.mz-cand.win .mz-pct{color:var(--green-d)}
+.mz-cbar{height:10px;border-radius:6px;background:#e6efe9;overflow:hidden}
+.mz-cbar i{display:block;height:100%;border-radius:6px;background:#c3d6ca;width:0;transition:width .8s cubic-bezier(.2,.9,.25,1)}
+.mz-cand.win .mz-cbar i{background:var(--grad)}
+.mz-note{margin-top:8px;font-size:13.5px;color:var(--dim);line-height:1.5}
+
+/* verdict */
+.mz-success{text-align:center}
+.mz-result-badge{display:inline-flex;align-items:center;gap:8px;background:var(--green-l);color:var(--green-d);
+  font-weight:800;font-size:16px;padding:8px 18px;border-radius:24px}
+.mz-result-badge.fail{background:rgba(240,152,15,.14);color:#b9740a}
+.mz-ring{width:170px;height:170px;margin:14px auto 6px;position:relative}
+.mz-ring-c{position:absolute;inset:0}
+.mz-ring-c b{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:46px;font-weight:900;line-height:1;color:var(--green-d)}
+.mz-ring-c span{position:absolute;top:50%;left:50%;transform:translate(-50%,20px);font-size:13.5px;color:var(--dim);font-weight:700;white-space:nowrap}
+.mz-fail-emoji{font-size:66px;margin:14px 0 6px}
+.mz-succ-title{font-size:25px;font-weight:900;letter-spacing:-.5px;margin-top:6px}
+.mz-succ-sub{font-size:16px;color:var(--sub);margin-top:8px;line-height:1.6}
+.mz-succ-stats{display:flex;justify-content:center;gap:12px;margin-top:20px}
+.mz-succ-stat{background:var(--card2);border:1px solid var(--line);border-radius:16px;padding:14px 22px;min-width:130px}
+.mz-succ-stat .ic{font-size:22px}
+.mz-succ-stat .v{font-size:24px;font-weight:900;margin-top:4px;color:var(--green-d)}
+.mz-succ-stat .k{font-size:14px;color:var(--dim);font-weight:700;margin-top:2px}
+.mz-success .mz-btns{margin-top:24px}
+
+/* ---- 실시간 포즈 유지 바 (포즈 유지형 판정) ---- */
+.mz-hold{position:absolute;left:16px;right:16px;bottom:16px;z-index:3}
+.mz-hold-bar{height:12px;border-radius:8px;background:rgba(255,255,255,.28);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.mz-hold-bar i{display:block;height:100%;width:0;border-radius:8px;background:linear-gradient(90deg,#34cf83,#1ba866);transition:width .12s linear}
+.mz-hold-txt{margin-top:8px;text-align:center;color:#eafff4;font-size:15.5px;font-weight:800;text-shadow:0 2px 6px rgba(0,0,0,.5)}
+.mz-hold.on .mz-hold-txt{color:#b8ffdc}
+/* 카메라 화면에서 사이드 패널이 함께 보이도록 그리드 확장 */
+.mz-modal.mz-wide .mz-body{display:grid;grid-template-columns:1fr 260px;gap:20px}
+.mz-modal.mz-wide .mz-cam{grid-row:span 1}
+@media (max-width:900px){.mz-modal.mz-wide .mz-body{grid-template-columns:1fr}}
