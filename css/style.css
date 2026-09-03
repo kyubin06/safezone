@@ -36,7 +36,7 @@ button{font-family:inherit;cursor:pointer;border:none;color:inherit}
   display:grid;
   place-items:center;
   font-size:21px;
-  background:#8FBE82;
+  background:rgba(143,190,130,0.8);
   box-shadow:0 6px 16px rgba(143,190,130,.4)
 }
 .brand small{display:block;font-size:13px;color:var(--sub);font-weight:600}
