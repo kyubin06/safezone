@@ -29,8 +29,16 @@ button{font-family:inherit;cursor:pointer;border:none;color:inherit}
 .brand .brand-div{order:-1}
 .brand .logo{order:0}
 .brand .brand-name{order:1}
-.brand .logo{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-size:21px;
-  background:var(--grad);box-shadow:0 6px 16px rgba(34,176,107,.4)}
+.brand .logo{
+  width:36px;
+  height:36px;
+  border-radius:11px;
+  display:grid;
+  place-items:center;
+  font-size:21px;
+  background:#8FBE82;
+  box-shadow:0 6px 16px rgba(143,190,130,.4)
+}
 .brand small{display:block;font-size:13px;color:var(--sub);font-weight:600}
 .steps{display:flex;gap:5px;align-items:center;font-size:14.5px;color:var(--dim);font-weight:700}
 .steps .st{display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:22px;transition:.3s}
